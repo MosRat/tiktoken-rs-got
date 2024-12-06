@@ -1,8 +1,8 @@
 use rustc_hash::FxHashMap as HashMap;
 
 use tiktoken_rs::{
-    byte_pair_split, cl100k_base, o200k_base, p50k_base, p50k_base_singleton, r50k_base, CoreBPE,
-    Rank,
+    byte_pair_split, cl100k_base, got, o200k_base, p50k_base, p50k_base_singleton, r50k_base,
+    CoreBPE, Rank,
 };
 
 #[test]
@@ -24,6 +24,20 @@ fn test_roundtrip(bpe: &CoreBPE, text: &str) {
 fn test_decode(bpe: &CoreBPE, text: &str, exected_tokens: Vec<Rank>) {
     let tokens = bpe.encode_with_special_tokens(text);
     assert_eq!(tokens, exected_tokens,);
+}
+
+#[test]
+fn got_test(){
+    let bpe = got().unwrap();
+    test_roundtrip(&bpe, "This is a test         with a lot of spaces");
+
+    test_decode(
+        &bpe,
+        "<img>12 121  text  <imgpad> <imgpad> <imgpad> <imgpad> </img>  \\frac{1} {2}",
+        vec![
+            151857, 16, 17, 220, 16, 17, 16, 220, 1467, 256, 151859, 220, 151859, 220, 151859, 220, 151859, 220, 151858, 220, 1124, 37018, 90, 16, 92, 314, 17, 92
+        ],
+    );
 }
 
 #[test]

@@ -155,3 +155,67 @@ pub fn o200k_base() -> Result<CoreBPE> {
     )?;
     Ok(bpe)
 }
+
+/// GOT OCR 2.0 TikToken Tokenizer Builder.
+/// ref to https://huggingface.co/stepfun-ai/GOT-OCR2_0/blob/main/tokenization_qwen.py
+pub fn got() -> Result<CoreBPE> {
+    let bpe_file = include_str!("../../assets/qwen.tiktoken");
+
+    let mut encoder = HashMap::default();
+    for line in bpe_file.lines() {
+        let mut parts = line.split(' ');
+        let token = &general_purpose::STANDARD.decode(parts.next().unwrap())?;
+        let rank: Rank = parts.next().unwrap().parse().unwrap();
+        encoder.insert(token.clone(), rank);
+    }
+
+    let mut special_tokens: HashMap<String, Rank> = HashMap::default();
+
+    let endoftext_got = "<|endoftext|>".to_string();
+    let im_start = "<|im_start|>".to_string();
+    let im_end = "<|im_end|>".to_string();
+    // # as the default behavior is changed to allow special tokens in
+    // # regular texts, the surface forms of special tokens need to be
+    // # as different as possible to minimize the impact
+    let extras: Vec<_> = (0..205).map(|i| format!("<|extra_{i}|>")).collect();
+
+    let image_start_tag = "<img>".to_string();
+    let image_end_tag = "</img>".to_string();
+    let image_pad_tag = "<imgpad>".to_string();
+    let ref_start_tag = "<ref>".to_string();
+    let ref_end_tag = "</ref>".to_string();
+    let box_start_tag = "<box>".to_string();
+    let box_end_tag = "</box>".to_string();
+    let quad_start_tag = "<quad>".to_string();
+    let quad_end_tag = "</quad>".to_string();
+
+    let special_tokens_add = [
+        vec![endoftext_got, im_start, im_end],
+        extras,
+        vec![
+            ref_start_tag,
+            ref_end_tag,
+            box_start_tag,
+            box_end_tag,
+            quad_start_tag,
+            quad_end_tag,
+            image_start_tag,
+            image_end_tag,
+            image_pad_tag,
+        ],
+    ]
+    .concat();
+    let special_start = encoder.len();
+    for (i, v) in special_tokens_add.into_iter().enumerate() {
+        special_tokens.insert(v, (special_start + i) as Rank);
+    }
+
+    // special_tokens.insert(String::from(ENDOFTEXT), 50256);
+
+    let bpe = CoreBPE::new(
+        encoder,
+        special_tokens,
+        r#"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"#,
+    )?;
+    Ok(bpe)
+}

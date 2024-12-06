@@ -26,6 +26,7 @@ pub enum Tokenizer {
     R50kBase,
     P50kEdit,
     Gpt2,
+    Got
 }
 
 // Keep this in sync with:
